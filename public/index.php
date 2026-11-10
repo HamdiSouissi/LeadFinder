@@ -13,7 +13,14 @@ try {
     }
     if($route==='logout'){if($_SERVER['REQUEST_METHOD']==='POST')csrf_check();$_SESSION=[];session_destroy();redirect('?r=login');}
     require_auth();
-    try { $customJson = setting('categories_custom', ''); $custom = $customJson ? json_decode((string)$customJson, true) : []; if (is_array($custom)) foreach ($custom as $key=>$value) if (is_string($key) && preg_match('/^[a-z0-9_-]{2,40}$/i',$key) && is_array($value) && !empty($value['label']) && is_array($value['tags']??null)) $categories[$key]=['label'=>(string)$value['label'],'tags'=>array_values(array_filter($value['tags'],'is_string'))]; } catch (Throwable $ignored) {}
+    try { $customJson = setting('categories_custom', ''); $custom = $customJson ? json_decode((string)$customJson, true) : []; if (is_array($custom)) foreach ($custom as $key=>$value) if (is_string($key) && preg_match('/^[a-z0-9_-]{2,40}$/i',$key) && is_array($value) && is_scalar($value['label']??null) && trim((string)$value['label'])!=='' && is_array($value['tags']??null)) $categories[$key]=['label'=>(string)$value['label'],'tags'=>array_values(array_filter($value['tags'],'is_string'))]; } catch (Throwable $ignored) {}
+    foreach ($categories as $key=>$entry) {
+        if (!is_array($entry)) $entry=[];
+        $labelValue=$entry['label']??'';
+        $label=is_scalar($labelValue)?trim((string)$labelValue):'';
+        $tags=is_array($entry['tags']??null)?array_values(array_filter($entry['tags'],'is_string')):[];
+        $categories[$key]=['label'=>$label!==''?$label:ucfirst(str_replace('_',' ',(string)$key)),'tags'=>$tags];
+    }
     if(str_starts_with($route,'api_')){
         if($_SERVER['REQUEST_METHOD']!=='POST')json_response(['error'=>'Méthode non autorisée'],405);csrf_check();
         if($route==='api_suggest'){$query=trim((string)($_POST['q']??''));$suggestions=(new NominatimService($config))->suggest($query);json_response(['suggestions'=>$suggestions]);}
@@ -25,6 +32,7 @@ try {
         }
         if($route==='api_search_step'){
             $job=$_SESSION['search_job']??null;if(!$job||(int)$job['search_id']!==(int)($_POST['search_id']??0))json_response(['error'=>'Recherche expirée. Relancez-la.'],409);
+            if(!isset($categories[$job['category']]))json_response(['error'=>'Cette catégorie n’existe plus. Relancez la recherche avec une catégorie disponible.'],409);
             if($job['tile']>=count($job['tiles']))json_response(['done'=>true,'percent'=>100,'found'=>$job['found'],'saved'=>$job['saved'],'source'=>$job['source']??'overpass']);
             try{
                 if(($job['source']??'overpass')==='sirene'){

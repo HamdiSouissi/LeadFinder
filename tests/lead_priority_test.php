@@ -9,6 +9,7 @@ $assert = static function (bool $condition, string $message): void {
 };
 
 $categories = require dirname(__DIR__) . '/config/categories.php';
+foreach ($categories as $category) $assert(is_array($category) && isset($category['label']) && is_array($category['tags'] ?? null), 'every category has a label and OSM tag list');
 $assert(array_key_first($categories) === 'all_businesses', 'broad business category is the default option');
 $assert(in_array('shop=*', $categories['all_businesses']['tags'], true), 'broad OSM search includes shops');
 $assert(in_array('office=*', $categories['all_businesses']['tags'], true), 'broad OSM search includes offices');
