@@ -71,7 +71,7 @@ La configuration initiale est un exemple : ne la publiez pas avec des identifian
 
 ## Paramètres et limites d’usage
 
-Le User-Agent doit être identifiable et fournir un contact. Respectez les politiques d’utilisation Nominatim et des instances Overpass publiques : ne lancez pas de recherches massives ou répétitives, sélectionnez une zone raisonnable, limitez la fréquence, et prévoyez que les serveurs gratuits peuvent être indisponibles. La grille est plafonnée à 16 cellules par recherche. Les tuiles cartographiques viennent d’OpenStreetMap; respectez aussi leur politique d’usage.
+Le User-Agent doit être identifiable et fournir un contact. Respectez les politiques d’utilisation Nominatim et des instances Overpass publiques : ne lancez pas de recherches massives ou répétitives, sélectionnez une zone raisonnable, limitez la fréquence, et prévoyez que les serveurs gratuits peuvent être indisponibles. Si tous les hôtes affichent `Connection timed out`, vérifiez auprès de l’hébergeur que les connexions HTTPS sortantes (port 443) sont autorisées depuis PHP. La grille est plafonnée à 16 cellules par recherche. Les tuiles cartographiques viennent d’OpenStreetMap; respectez aussi leur politique d’usage.
 
 L’absence d’un tag `website`, `contact:website` ou `url` dans OSM **ne prouve pas** que l’établissement n’a pas de site : la donnée peut être incomplète. Le statut de confiance est indicatif. La vérification DuckDuckGo est une recherche web non garantie, et non une preuve exhaustive. Cette application ne scrape ni Google Maps ni les Pages Jaunes. Les téléphones, emails et réseaux sociaux sont repris des balises OSM lorsqu’elles existent; aucune extraction de données personnelles depuis les sites tiers n’est effectuée.
 

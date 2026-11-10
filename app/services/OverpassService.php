@@ -17,7 +17,7 @@ final class OverpassService {
         [$s,$w,$n,$e]=$b; $midLat=($s+$n)/2; $midLon=($w+$e)/2;
         return [[$s,$w,$midLat,$midLon],[$s,$midLon,$midLat,$e],[$midLat,$w,$n,$midLon],[$midLat,$midLon,$n,$e]];
     }
-    public function servers(): array { $servers=array_values(array_filter($this->config['sources']['overpass_servers']??[],'is_string'));$servers[]='https://overpass.osm.ch/api/interpreter';return array_slice(array_values(array_unique($servers)),0,5); }
+    public function servers(): array { $servers=array_values(array_filter($this->config['sources']['overpass_servers']??[],'is_string'));$servers[]='https://overpass.osm.ch/api/interpreter';$servers[]='https://overpass.nchc.org.tw/api/interpreter';return array_slice(array_values(array_unique($servers)),0,5); }
 
     /** Try exactly one mirror so the browser can report the failover between attempts. */
     public function fetchAttempt(array $bbox,array $tagPairs,int $serverIndex): array {
@@ -28,8 +28,8 @@ final class OverpassService {
         }
         if(!isset($servers[$serverIndex]))return ['ok'=>false,'error'=>'Aucun miroir Overpass configuré.','server_index'=>$serverIndex];
         $query=$this->query($bbox,$tagPairs);if($query==='')return ['ok'=>true,'elements'=>[],'cached'=>false,'server_index'=>$serverIndex];
-        $this->delay(); $server=$servers[$serverIndex];$ch=curl_init($server);$timeout=max(6,min(8,(int)($this->config['sources']['timeout']??8)));
-        curl_setopt_array($ch,[CURLOPT_POST=>true,CURLOPT_POSTFIELDS=>http_build_query(['data'=>$query]),CURLOPT_RETURNTRANSFER=>true,CURLOPT_USERAGENT=>$this->config['sources']['user_agent'],CURLOPT_HTTPHEADER=>['Accept: application/json'],CURLOPT_ENCODING=>'',CURLOPT_TIMEOUT=>$timeout,CURLOPT_CONNECTTIMEOUT=>min(3,$timeout),CURLOPT_LOW_SPEED_LIMIT=>32,CURLOPT_LOW_SPEED_TIME=>6]);
+        $this->delay(); $server=$servers[$serverIndex];$ch=curl_init($server);$timeout=max(10,min(12,(int)($this->config['sources']['timeout']??10)));
+        curl_setopt_array($ch,[CURLOPT_POST=>true,CURLOPT_POSTFIELDS=>http_build_query(['data'=>$query]),CURLOPT_RETURNTRANSFER=>true,CURLOPT_USERAGENT=>$this->config['sources']['user_agent'],CURLOPT_HTTPHEADER=>['Accept: application/json'],CURLOPT_ENCODING=>'',CURLOPT_TIMEOUT=>$timeout,CURLOPT_CONNECTTIMEOUT=>min(5,$timeout),CURLOPT_LOW_SPEED_LIMIT=>32,CURLOPT_LOW_SPEED_TIME=>9]);
         $body=curl_exec($ch);$code=(int)curl_getinfo($ch,CURLINFO_HTTP_CODE);$error=curl_error($ch);curl_close($ch);
         if($body!==false&&$code>=200&&$code<300){
             $data=json_decode($body,true);
@@ -50,7 +50,7 @@ final class OverpassService {
         $grouped=[];foreach($tagPairs as $pair)if(preg_match('/^([a-zA-Z0-9_:]+)=([a-zA-Z0-9_ -]+)$/',$pair,$m))$grouped[$m[1]][]=$m[2];
         $b=implode(',',array_map(fn($n)=>sprintf('%.6f',$n),array_slice($bbox,0,4)));$parts=[];
         foreach($grouped as $key=>$values){$values=array_values(array_unique($values));$selector=count($values)===1?'["'.$key.'"="'.$values[0].'"]':'["'.$key.'"~"^('.implode('|',array_map(fn($v)=>preg_quote($v,'/'),$values)).')$"]';$parts[]='nwr'.$selector.'('.$b.');';}
-        return $parts?'[out:json][timeout:6];('.implode('',$parts).');out center tags;':'';
+        return $parts?'[out:json][timeout:8];('.implode('',$parts).');out center tags;':'';
     }
     private function cacheFile(array $bbox,array $tagPairs): string { return dirname(__DIR__,2).'/storage/cache/over_'.sha1(json_encode([$bbox,$tagPairs])).'.json'; }
     private function delay(): void {
