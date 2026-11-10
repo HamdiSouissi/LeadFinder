@@ -23,6 +23,7 @@ function db(): PDO {
     return $pdo;
 }
 function e(mixed $v): string { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
+function first_char(mixed $v): string { return preg_match('/^./us',(string)$v,$m)?$m[0]:substr((string)$v,0,1); }
 function csrf_token(): string { return $_SESSION['csrf'] ??= bin2hex(random_bytes(32)); }
 function csrf_check(): void { if (!hash_equals(csrf_token(), (string)($_POST['_csrf'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''))) { http_response_code(419); exit('Jeton de sécurité invalide. Rechargez la page.'); } }
 function current_user(): ?array { return $_SESSION['user'] ?? null; }

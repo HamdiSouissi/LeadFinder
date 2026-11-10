@@ -11,8 +11,8 @@ CREATE TABLE IF NOT EXISTS searches (
 CREATE TABLE IF NOT EXISTS prospects (
  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, osm_type VARCHAR(12) NOT NULL, osm_id BIGINT UNSIGNED NOT NULL,
  nom VARCHAR(255) NOT NULL, categorie VARCHAR(100) NOT NULL, adresse TEXT, ville VARCHAR(150), code_postal VARCHAR(20),
- telephone VARCHAR(100), telephone_normalise VARCHAR(32), email VARCHAR(190), facebook TEXT, instagram TEXT, horaires TEXT,
- latitude DECIMAL(10,7), longitude DECIMAL(10,7), site_web_statut ENUM('aucun','reseaux_sociaux','verifie_aucun') NOT NULL DEFAULT 'aucun',
+ telephone VARCHAR(100), telephone_normalise VARCHAR(32), email VARCHAR(190), site_web TEXT, facebook TEXT, instagram TEXT, horaires TEXT,
+ latitude DECIMAL(10,7), longitude DECIMAL(10,7), site_web_statut ENUM('aucun','reseaux_sociaux','verifie_aucun','present') NOT NULL DEFAULT 'aucun',
  score_confiance ENUM('élevé','moyen','faible') NOT NULL DEFAULT 'moyen',
  statut_prospection ENUM('nouveau','a_contacter','contacte','interesse','rdv','client','refuse') NOT NULL DEFAULT 'nouveau',
  notes TEXT, search_id BIGINT UNSIGNED NULL, assigned_to BIGINT UNSIGNED NULL,

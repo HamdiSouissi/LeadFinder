@@ -1,6 +1,6 @@
 # Prime LeadFinder
 
-Application web de prospection locale en PHP natif 8.x et MySQL/PDO. Elle interroge Nominatim et Overpass (OpenStreetMap) et conserve les commerces dont les données OSM ne déclarent pas de site web classique. Interface responsive, suivi commercial, vue Kanban et carte Leaflet.
+Application web de prospection locale en PHP natif 8.x et MySQL/PDO. Elle interroge Nominatim et Overpass (OpenStreetMap) pour trouver tous les établissements d’une catégorie, avec ou sans site web, puis enregistre les coordonnées et liens web disponibles dans les données OSM. Interface responsive, suivi commercial, vue Kanban et carte Leaflet.
 
 ## Arborescence
 
@@ -33,6 +33,8 @@ Application web de prospection locale en PHP natif 8.x et MySQL/PDO. Elle interr
 │   ├── categories.php
 │   └── config.example.php
 ├── database/
+│   ├── migrations/
+│   │   └── 001_add_site_web.sql
 │   ├── schema.sql
 │   └── seed.sql
 ├── public/
@@ -49,7 +51,7 @@ Application web de prospection locale en PHP natif 8.x et MySQL/PDO. Elle interr
 ## Installation mutualisée IONOS
 
 1. Dans IONOS, créez une base MySQL et un utilisateur avec droits sur cette base. Notez l’hôte SQL (il n’est pas toujours `localhost`), le nom, l’utilisateur et le mot de passe.
-2. Importez `database/schema.sql` via phpMyAdmin. Pour charger les données d’exemple et le compte de démonstration, importez ensuite `database/seed.sql`.
+2. Pour une nouvelle base, importez `database/schema.sql` via phpMyAdmin. Si vous mettez à jour une base créée avec l’ancienne version, importez une seule fois `database/migrations/001_add_site_web.sql` avant de déployer le nouveau code. Pour les données d’exemple, importez ensuite `database/seed.sql`.
 3. Copiez `config/config.example.php` vers `config/config.php` et remplacez les informations MySQL et le contact dans `sources.user_agent` par une adresse de contact réelle (pas `admin@example.com`). Nominatim refuse ou limite les requêtes dont le User-Agent n’identifie pas réellement l’application. `config/config.php` est ignoré par Git.
 4. Dans IONOS, choisissez PHP 8.1 ou plus récent. Activez les extensions `pdo_mysql`, `curl` et `json` (et vérifiez qu’elles sont disponibles sur l’offre).
 5. Donnez au processus PHP les droits d’écriture sur `storage/cache` et `storage/logs` (permissions usuelles 755/775 selon l’hébergement).
