@@ -13,6 +13,7 @@ require_once __DIR__ . '/services/NominatimService.php';
 require_once __DIR__ . '/services/SireneService.php';
 require_once __DIR__ . '/services/OverpassService.php';
 require_once __DIR__ . '/services/EnrichmentService.php';
+require_once __DIR__ . '/services/ContactSearchService.php';
 require_once __DIR__ . '/services/AiService.php';
 require_once __DIR__ . '/services/ExportService.php';
 function db(): PDO {
