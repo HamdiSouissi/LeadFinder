@@ -1,0 +1,16 @@
+<?php
+final class AiService {
+    public function __construct(private array $config) {}
+    public function normalize(string $phone,string $address): array {
+        $answer=$this->complete('Retourne uniquement un objet JSON valide avec les clés phone et address. Normalise le numéro en format international au mieux, sans inventer les chiffres; corrige la présentation de l’adresse sans ajouter d’information. Si une valeur est inconnue, conserve la valeur reçue. Entrées : '.json_encode(['phone'=>$phone,'address'=>$address],JSON_UNESCAPED_UNICODE));
+        $answer=preg_replace('/```(?:json)?|```/i','',trim($answer));$data=json_decode($answer,true);if(!is_array($data))throw new RuntimeException('La réponse IA de normalisation n’est pas un JSON valide.');return ['phone'=>(string)($data['phone']??$phone),'address'=>(string)($data['address']??$address)];
+    }
+    public function prompt(string $name,string $category,string $city,string $channel): string {
+        $ai=$this->config['ai'];if(empty($ai['enabled'])||empty($ai['endpoint']))throw new RuntimeException('L’assistant IA est désactivé ou non configuré.');
+        $payload=['model'=>$ai['model']??'','messages'=>[['role'=>'system','content'=>'Rédige un message commercial bref, poli, personnalisé et non trompeur en français. Ne prétends pas avoir déjà échangé avec le prospect.'],['role'=>'user','content'=>"Canal: $channel. Prospect: $name, activité: $category, ville: $city. Propose un premier message pertinent."]],'temperature'=>0.5];$ch=curl_init($ai['endpoint']);$headers=['Content-Type: application/json'];if(!empty($ai['api_key']))$headers[]='Authorization: Bearer '.$ai['api_key'];curl_setopt_array($ch,[CURLOPT_POST=>true,CURLOPT_POSTFIELDS=>json_encode($payload),CURLOPT_HTTPHEADER=>$headers,CURLOPT_RETURNTRANSFER=>true,CURLOPT_TIMEOUT=>30]);$body=curl_exec($ch);$code=(int)curl_getinfo($ch,CURLINFO_HTTP_CODE);$err=curl_error($ch);curl_close($ch);if(!$body||$code>=400)throw new RuntimeException('Erreur IA : '.($err?:"HTTP $code"));$data=json_decode($body,true);return (string)($data['choices'][0]['message']['content']??'Réponse IA illisible.');
+    }
+    private function complete(string $userText): string {
+        $ai=$this->config['ai'];if(empty($ai['enabled'])||empty($ai['endpoint']))throw new RuntimeException('L’assistant IA est désactivé ou non configuré.');
+        $payload=['model'=>$ai['model']??'','messages'=>[['role'=>'system','content'=>'Tu es un assistant de normalisation. N’invente jamais de données.'],['role'=>'user','content'=>$userText]],'temperature'=>0.1];$ch=curl_init($ai['endpoint']);$headers=['Content-Type: application/json'];if(!empty($ai['api_key']))$headers[]='Authorization: Bearer '.$ai['api_key'];curl_setopt_array($ch,[CURLOPT_POST=>true,CURLOPT_POSTFIELDS=>json_encode($payload),CURLOPT_HTTPHEADER=>$headers,CURLOPT_RETURNTRANSFER=>true,CURLOPT_TIMEOUT=>30]);$body=curl_exec($ch);$code=(int)curl_getinfo($ch,CURLINFO_HTTP_CODE);$err=curl_error($ch);curl_close($ch);if(!$body||$code>=400)throw new RuntimeException('Erreur IA : '.($err?:"HTTP $code"));$data=json_decode($body,true);$text=$data['choices'][0]['message']['content']??null;if(!is_string($text))throw new RuntimeException('Réponse IA illisible.');return $text;
+    }
+}
