@@ -52,7 +52,7 @@ final class OverpassService {
         foreach($grouped as $key=>$values){$values=array_values(array_unique($values));$selector=count($values)===1?'["'.$key.'"="'.$values[0].'"]':'["'.$key.'"~"^('.implode('|',array_map(fn($v)=>preg_quote($v,'/'),$values)).')$"]';$parts[]='nwr'.$selector.'('.$b.');';}
         return $parts?'[out:json][timeout:8];('.implode('',$parts).');out center tags;':'';
     }
-    private function cacheFile(array $bbox,array $tagPairs): string { return dirname(__DIR__,2).'/storage/cache/over_'.sha1(json_encode([$bbox,$tagPairs])).'.json'; }
+    private function cacheFile(array $bbox,array $tagPairs): string { return dirname(__DIR__,2).'/storage/cache/over_v3_'.sha1(json_encode([$bbox,$tagPairs])).'.json'; }
     private function delay(): void {
         $file=dirname(__DIR__,2).'/storage/cache/overpass-last';$last=is_file($file)?(float)file_get_contents($file):0;$wait=(float)($this->config['sources']['request_delay']??1.2)-(microtime(true)-$last);
         if($wait>0)usleep((int)($wait*1000000));@file_put_contents($file,(string)microtime(true),LOCK_EX);
