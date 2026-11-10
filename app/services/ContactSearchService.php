@@ -10,8 +10,8 @@ final class ContactSearchService {
     public function search(array $prospect, string $country, array $config): array {
         $name=trim((string)($prospect['nom']??''));$address=trim((string)($prospect['adresse']??''));$city=trim((string)($prospect['ville']??''));$postcode=trim((string)($prospect['code_postal']??''));
         if($name===''||($city===''&&$address===''))throw new RuntimeException('Le prospect doit avoir au minimum un nom et une ville ou une adresse.');
-        $country=in_array($country,['IT','FR','TN','MA','DZ'],true)?$country:'IT';$key='contact_'.sha1(strtolower($name.'|'.$address.'|'.$postcode.'|'.$city.'|'.$country));$cached=$this->cacheGet($key);if($cached)return $cached;
-        $locale=['IT'=>'it-it','FR'=>'fr-fr','TN'=>'fr-fr','MA'=>'fr-fr','DZ'=>'fr-fr'][$country];$terms=$country==='IT'?'telefono email contatti sito ufficiale':'téléphone email contact site officiel';
+        $country=in_array($country,['IT','FR'],true)?$country:'IT';$key='contact_'.sha1(strtolower($name.'|'.$address.'|'.$postcode.'|'.$city.'|'.$country));$cached=$this->cacheGet($key);if($cached)return $cached;
+        $locale=['IT'=>'it-it','FR'=>'fr-fr'][$country];$terms=$country==='IT'?'telefono email contatti sito ufficiale':'téléphone email contact site officiel';
         $query=trim('"'.$name.'" '.$address.' '.$postcode.' '.$city.' '.$terms);$html=$this->httpGet(self::SEARCH_URL.'?'.http_build_query(['q'=>$query,'kl'=>$locale]),$config,true);
         if($html===null)throw new RuntimeException('La recherche web est momentanément indisponible. Réessayez plus tard.');
         $results=$this->parseSearchResults($html);$contacts=['phone'=>null,'email'=>null,'website'=>null,'facebook'=>null,'instagram'=>null,'linkedin'=>null,'address'=>null,'city'=>null,'postcode'=>null];$contactSources=[];$sources=[];$visited=[];$pages=0;
@@ -23,6 +23,23 @@ final class ContactSearchService {
             if($contacts['phone']&&$contacts['email']&&$contacts['website']&&($contacts['facebook']||$contacts['instagram']||$contacts['linkedin']))break;
         }
         $answer=['contacts'=>$contacts,'contact_sources'=>$contactSources,'sources'=>$sources,'search_results'=>array_slice($results,0,8),'cached'=>false,'notice'=>'Coordonnées suggérées à vérifier avant enregistrement. Les résultats publics peuvent être incomplets ou correspondre à une autre entreprise.'];$this->cacheSet($key,$answer);return $answer;
+    }
+
+    public function discoverBusinessResults(string $city,string $category,string $country,array $config): array {
+        $city=trim($city);$country=in_array($country,['IT','FR'],true)?$country:'IT';
+        if($city===''||strlen($city)>480)throw new InvalidArgumentException('Indiquez une ville de moins de 120 caractères.');
+        $terms=[
+            'IT'=>['all_businesses'=>'attività imprese negozi aziende','restaurant'=>'ristoranti pizzerie','cafe'=>'bar caffetterie','hairdresser'=>'parrucchieri centri estetici','garage'=>'officine autoriparazioni','bakery'=>'panifici pasticcerie','pharmacy'=>'farmacie','hotel'=>'hotel alberghi','fitness'=>'palestre','beauty'=>'centri estetici','dentist'=>'studi dentistici','florist'=>'fioristi','supermarket'=>'supermercati alimentari'],
+            'FR'=>['all_businesses'=>'entreprises commerces sociétés','restaurant'=>'restaurants pizzerias','cafe'=>'cafés bars','hairdresser'=>'salons de coiffure instituts de beauté','garage'=>'garages automobiles','bakery'=>'boulangeries pâtisseries','pharmacy'=>'pharmacies','hotel'=>'hôtels hébergements','fitness'=>'salles de sport','beauty'=>'instituts de beauté','dentist'=>'cabinets dentaires','florist'=>'fleuristes','supermarket'=>'supermarchés épiceries'],
+        ];
+        $categoryTerm=$terms[$country][$category]??($country==='IT'?'attività imprese':'entreprises commerces');
+        $categoryQuery='('.str_replace(' ',' OR ',$categoryTerm).')';$query=$country==='IT'?$categoryQuery.' "'.$city.'" sito ufficiale contatti':$categoryQuery.' "'.$city.'" site officiel contact';
+        $key='web_leads_'.sha1(strtolower($country.'|'.$category.'|'.$city));$cached=$this->cacheGet($key);if($cached)return $cached;
+        $html=$this->httpGet(self::SEARCH_URL.'?'.http_build_query(['q'=>$query,'kl'=>$country==='IT'?'it-it':'fr-fr']),$config,true);
+        if($html===null)throw new RuntimeException('Le moteur de recherche web est momentanément indisponible.');
+        $results=array_slice($this->parseSearchResults($html),0,10);
+        $answer=['results'=>$results,'cached'=>false,'notice'=>'Pistes issues d’un moteur web public, non vérifiées et susceptibles d’être limitées. Ouvrez chaque source et confirmez qu’il s’agit bien d’un prospect avant de l’ajouter.'];
+        $this->cacheSet($key,$answer);return $answer;
     }
 
     private function parseSearchResults(string $html): array {

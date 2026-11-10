@@ -5,9 +5,10 @@ final class NominatimService {
         $query=trim($query);if(strlen($query)<3)return [];$key='sug_'.sha1(strtolower($query));$cached=$this->cacheGet($key);if($cached)return $cached;
         $url=rtrim($this->config['sources']['nominatim_url'],'/').'/search?'.http_build_query(['q'=>$query,'format'=>'jsonv2','limit'=>5,'addressdetails'=>1]);$rows=$this->get($url);$result=[];foreach($rows as $row)if(!empty($row['display_name']))$result[]=$row['display_name'];$this->cacheSet($key,$result);return $result;
     }
-    public function geocode(string $query): array {
-        $key='nom_v2_'.sha1(strtolower(trim($query))); $cached=$this->cacheGet($key); if($cached) return $cached;
-        $url=rtrim($this->config['sources']['nominatim_url'],'/').'/search?'.http_build_query(['q'=>$query,'format'=>'jsonv2','limit'=>1,'addressdetails'=>1]);
+    public function geocode(string $query,string $country='IT'): array {
+        $country=in_array($country,['IT','FR'],true)?$country:'IT';$countryCode=strtolower($country);
+        $key='nom_v3_'.sha1(strtolower(trim($query).'|'.$countryCode)); $cached=$this->cacheGet($key); if($cached) return $cached;
+        $url=rtrim($this->config['sources']['nominatim_url'],'/').'/search?'.http_build_query(['q'=>$query,'countrycodes'=>$countryCode,'format'=>'jsonv2','limit'=>1,'addressdetails'=>1]);
         $data=$this->get($url); if(!$data || empty($data[0]['boundingbox'])) throw new RuntimeException('Zone introuvable : vérifiez le nom de la ville ou de la zone.');
         $r=$data[0]; $result=['label'=>$r['display_name']??$query,'bbox'=>array_map('floatval',$r['boundingbox']),'lat'=>(float)$r['lat'],'lon'=>(float)$r['lon'],'country_code'=>strtolower((string)($r['address']['country_code']??''))]; $this->cacheSet($key,$result); return $result;
     }

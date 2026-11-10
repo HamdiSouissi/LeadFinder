@@ -4,7 +4,7 @@ return [
         'host' => 'localhost', 'database' => 'prime_leadfinder', 'username' => 'db_user',
         'password' => 'change-me', 'charset' => 'utf8mb4',
     ],
-    'app' => ['name' => 'Prime LeadFinder', 'base_url' => '', 'timezone' => 'Africa/Tunis', 'cache_ttl' => 86400],
+    'app' => ['name' => 'Prime LeadFinder', 'base_url' => '', 'timezone' => 'Europe/Rome', 'cache_ttl' => 86400],
     'sources' => [
         'user_agent' => 'PrimeLeadFinder/1.0 (contact: admin@example.com)',
         'nominatim_url' => 'https://nominatim.openstreetmap.org',
