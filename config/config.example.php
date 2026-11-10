@@ -8,8 +8,8 @@ return [
     'sources' => [
         'user_agent' => 'PrimeLeadFinder/1.0 (contact: admin@example.com)',
         'nominatim_url' => 'https://nominatim.openstreetmap.org',
-        'overpass_servers' => ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://overpass.private.coffee/api/interpreter'],
-        'request_delay' => 1.2, 'timeout' => 12, 'max_grid_cells' => 16,
+        'overpass_servers' => ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://overpass.private.coffee/api/interpreter', 'https://overpass.osm.ch/api/interpreter'],
+        'request_delay' => 1.2, 'timeout' => 8, 'max_grid_cells' => 16,
     ],
     'ai' => [
         // Exemple Groq compatible OpenAI. Laissez désactivé tant que vous n'avez pas fourni votre clé privée.
