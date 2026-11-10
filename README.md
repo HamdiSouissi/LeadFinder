@@ -62,7 +62,7 @@ La configuration initiale est un exemple : ne la publiez pas avec des identifian
 ## Fonctionnalités disponibles
 
 - Authentification par `password_hash` / `password_verify`, sessions, jeton CSRF, requêtes PDO préparées et échappement HTML.
-- Recherche géographique Nominatim avec cache, grille de bounding box et progression AJAX par cellule Overpass. Les erreurs réseau sont affichées; les réponses Overpass/Nominatim sont mises en cache dans `storage/cache`.
+- Recherche géographique Nominatim avec cache, rayon de recherche réglable (2, 5, 10 ou 20 km, 5 km par défaut), grille de bounding box et progression AJAX par cellule Overpass. Les requêtes Overpass regroupent les tags et, en cas de timeout sur une cellule assez grande, la subdivisent automatiquement en sous-zones. Les erreurs réseau sont affichées; les réponses Overpass/Nominatim sont mises en cache dans `storage/cache`.
 - Miroirs Overpass et temporisations configurables. Nominatim est limité localement à environ une requête par seconde; les recherches DuckDuckGo sont espacées.
 - Filtres de catégories OSM modifiables dans `config/categories.php`; catégories supplémentaires possibles dans Paramètres (objet JSON `clé: {label, tags}`).
 - Prospects dédupliqués par type/id OSM. Une mise à jour issue d’une recherche ne remplace pas les notes ni le statut de prospection existants.
