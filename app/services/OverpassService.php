@@ -24,7 +24,7 @@ final class OverpassService {
         $servers=$this->servers(); $cacheFile=$this->cacheFile($bbox,$tagPairs);
         if(is_file($cacheFile)&&filemtime($cacheFile)>time()-(int)($this->config['app']['cache_ttl']??86400)) {
             $cached=json_decode((string)file_get_contents($cacheFile),true);
-            if(is_array($cached))return ['ok'=>true,'elements'=>$cached,'cached'=>true,'server_index'=>$serverIndex];
+            if(is_array($cached)&&count($cached)>0)return ['ok'=>true,'elements'=>$cached,'cached'=>true,'server_index'=>$serverIndex];
         }
         if(!isset($servers[$serverIndex]))return ['ok'=>false,'error'=>'Aucun miroir Overpass configuré.','server_index'=>$serverIndex];
         $query=$this->query($bbox,$tagPairs);if($query==='')return ['ok'=>true,'elements'=>[],'cached'=>false,'server_index'=>$serverIndex];
@@ -34,7 +34,7 @@ final class OverpassService {
         if($body!==false&&$code>=200&&$code<300){
             $data=json_decode($body,true);
             if(!empty($data['remark']))return ['ok'=>false,'error'=>(string)$data['remark'],'server_index'=>$serverIndex,'server'=>$server];
-            if(isset($data['elements'])&&is_array($data['elements'])){@file_put_contents($cacheFile,json_encode($data['elements']));return ['ok'=>true,'elements'=>$data['elements'],'cached'=>false,'server_index'=>$serverIndex,'server'=>$server];}
+            if(isset($data['elements'])&&is_array($data['elements'])){if(count($data['elements'])>0)@file_put_contents($cacheFile,json_encode($data['elements']));return ['ok'=>true,'elements'=>$data['elements'],'cached'=>false,'server_index'=>$serverIndex,'server'=>$server];}
             $error='Réponse Overpass invalide ou incomplète';
         } else $error=$error?:'HTTP '.$code;
         return ['ok'=>false,'error'=>$error,'server_index'=>$serverIndex,'server'=>$server];
@@ -52,7 +52,7 @@ final class OverpassService {
         foreach($grouped as $key=>$values){$values=array_values(array_unique($values));$selector=count($values)===1?'["'.$key.'"="'.$values[0].'"]':'["'.$key.'"~"^('.implode('|',array_map(fn($v)=>preg_quote($v,'/'),$values)).')$"]';$parts[]='nwr'.$selector.'('.$b.');';}
         return $parts?'[out:json][timeout:8];('.implode('',$parts).');out center tags;':'';
     }
-    private function cacheFile(array $bbox,array $tagPairs): string { return dirname(__DIR__,2).'/storage/cache/over_v3_'.sha1(json_encode([$bbox,$tagPairs])).'.json'; }
+    private function cacheFile(array $bbox,array $tagPairs): string { return dirname(__DIR__,2).'/storage/cache/over_v4_'.sha1(json_encode([$bbox,$tagPairs])).'.json'; }
     private function delay(): void {
         $file=dirname(__DIR__,2).'/storage/cache/overpass-last';$last=is_file($file)?(float)file_get_contents($file):0;$wait=(float)($this->config['sources']['request_delay']??1.2)-(microtime(true)-$last);
         if($wait>0)usleep((int)($wait*1000000));@file_put_contents($file,(string)microtime(true),LOCK_EX);
