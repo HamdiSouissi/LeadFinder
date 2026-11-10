@@ -1,6 +1,6 @@
 # Prime LeadFinder
 
-Application web de prospection locale en PHP natif 8.x et MySQL/PDO. Elle interroge Nominatim et Overpass (OpenStreetMap) pour trouver tous les établissements d’une catégorie, avec ou sans site web, puis enregistre les coordonnées et liens web disponibles dans les données OSM. Interface responsive, suivi commercial, vue Kanban et carte Leaflet.
+Application web de prospection locale en PHP natif 8.x et MySQL/PDO. En France, les recherches par rayon utilisent l’API publique officielle de l’Annuaire des Entreprises (données Sirene), sans recherche de commerces dans les cartes. Pour les autres pays et les recherches couvrant une zone entière, l’application conserve Nominatim et Overpass (OpenStreetMap). Interface responsive, suivi commercial, vue Kanban et carte Leaflet.
 
 ## Arborescence
 
@@ -15,6 +15,7 @@ Application web de prospection locale en PHP natif 8.x et MySQL/PDO. Elle interr
 │   │   ├── EnrichmentService.php
 │   │   ├── ExportService.php
 │   │   ├── NominatimService.php
+│   │   ├── SireneService.php
 │   │   ├── OverpassService.php
 │   │   └── PhoneNormalizer.php
 │   └── views/
@@ -31,6 +32,7 @@ Application web de prospection locale en PHP natif 8.x et MySQL/PDO. Elle interr
 │       └── settings.php
 ├── config/
 │   ├── categories.php
+│   ├── sirene_categories.php
 │   └── config.example.php
 ├── database/
 │   ├── migrations/
@@ -64,16 +66,16 @@ La configuration initiale est un exemple : ne la publiez pas avec des identifian
 ## Fonctionnalités disponibles
 
 - Authentification par `password_hash` / `password_verify`, sessions, jeton CSRF, requêtes PDO préparées et échappement HTML.
-- Recherche géographique Nominatim avec cache, rayon de recherche réglable (2, 5, 10 ou 20 km, 5 km par défaut), grille de bounding box et progression AJAX par cellule Overpass. Les requêtes Overpass regroupent les tags; le navigateur affiche en temps réel la zone, le miroir interrogé et le temps écoulé. Les miroirs sont tentés un à un avec des délais courts; si Overpass signale un dépassement de requête sur une cellule assez grande, elle est subdivisée automatiquement. Les erreurs réseau sont affichées; les réponses Overpass/Nominatim sont mises en cache dans `storage/cache`.
+- Recherche géographique Nominatim avec cache et rayon réglable (2, 5, 10 ou 20 km). En France, si un rayon est choisi et que la catégorie a une correspondance NAF, l’application interroge l’API publique officielle de l’Annuaire des Entreprises/Sirene; les résultats actifs sont filtrés par code NAF et distance réelle, puis enregistrés avec leur SIRET. Chaque recherche parcourt au plus 10 pages de 25 entreprises, avec mise en cache et temporisation entre les requêtes. Pour les autres pays, les catégories personnalisées sans correspondance NAF et les recherches « zone entière », l’application conserve la grille Overpass, les miroirs et le redécoupage automatique des zones trop lourdes.
 - Miroirs Overpass et temporisations configurables. Nominatim est limité localement à environ une requête par seconde; les recherches DuckDuckGo sont espacées.
-- Filtres de catégories OSM modifiables dans `config/categories.php`; catégories supplémentaires possibles dans Paramètres (objet JSON `clé: {label, tags}`).
-- Prospects dédupliqués par type/id OSM. Une mise à jour issue d’une recherche ne remplace pas les notes ni le statut de prospection existants.
+- Correspondance des catégories françaises avec les codes NAF dans `config/sirene_categories.php`. Les catégories personnalisées restent compatibles avec la recherche OpenStreetMap.
+- Prospects OSM dédupliqués par type/id, et prospects Sirene par SIRET (stocké dans les champs d’identifiant source existants, sans migration de schéma). Une mise à jour issue d’une recherche ne remplace pas les notes ni le statut de prospection existants.
 - Tableau filtrable, export CSV UTF-8 avec BOM utilisable dans Excel, fiche avec actions téléphoniques/WhatsApp/email/itinéraire, journal d’interactions, vérification web facultative, Kanban et carte OSM/Leaflet.
 - Normalisation locale de numéros tunisiens, français, marocains, algériens et italiens. Génération de message et suggestion de normalisation par IA désactivées par défaut et compatibles avec endpoint Chat Completions configuré par l’utilisateur. L’interface propose aussi une présentation arabe avec direction RTL.
 
 ## Paramètres et limites d’usage
 
-Le User-Agent doit être identifiable et fournir un contact. Respectez les politiques d’utilisation Nominatim et des instances Overpass publiques : ne lancez pas de recherches massives ou répétitives, sélectionnez une zone raisonnable, limitez la fréquence, et prévoyez que les serveurs gratuits peuvent être indisponibles. Si tous les hôtes affichent `Connection timed out`, vérifiez auprès de l’hébergeur que les connexions HTTPS sortantes (port 443) sont autorisées depuis PHP. La grille est plafonnée à 16 cellules par recherche. Les tuiles cartographiques viennent d’OpenStreetMap; respectez aussi leur politique d’usage.
+Le User-Agent doit être identifiable et fournir un contact. L’API Recherche d’entreprises/Sirene est gratuite mais publique : disponibilité et quotas ne sont pas garantis, les résultats sont limités à 10 pages (250 fiches d’entreprises maximum par recherche) et les établissements non diffusibles peuvent manquer. Elle fournit des informations administratives et de localisation, mais pas directement les téléphones, emails, sites web ou réseaux sociaux. Les champs correspondants restent donc vides/inconnus : ne déduisez pas de leur absence que l’entreprise n’a pas ces coordonnées. Pour les recherches OSM, respectez les politiques d’utilisation Nominatim et d’Overpass : pas de recherches massives ou répétitives, sélectionnez une zone raisonnable, et prévoyez que les serveurs gratuits peuvent être indisponibles. Si tous les hôtes affichent `Connection timed out`, vérifiez auprès de l’hébergeur que les connexions HTTPS sortantes (port 443) sont autorisées depuis PHP. La grille est plafonnée à 16 cellules par recherche. Les tuiles cartographiques viennent d’OpenStreetMap; respectez aussi leur politique d’usage.
 
 L’absence d’un tag `website`, `contact:website` ou `url` dans OSM **ne prouve pas** que l’établissement n’a pas de site : la donnée peut être incomplète. Le statut de confiance est indicatif. La vérification DuckDuckGo est une recherche web non garantie, et non une preuve exhaustive. Cette application ne scrape ni Google Maps ni les Pages Jaunes. Les téléphones, emails et réseaux sociaux sont repris des balises OSM lorsqu’elles existent; aucune extraction de données personnelles depuis les sites tiers n’est effectuée.
 

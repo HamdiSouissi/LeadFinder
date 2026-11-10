@@ -10,6 +10,7 @@ $config = file_exists($configFile) ? require $configFile : require dirname(__DIR
 date_default_timezone_set($config['app']['timezone'] ?? 'UTC');
 require_once __DIR__ . '/services/PhoneNormalizer.php';
 require_once __DIR__ . '/services/NominatimService.php';
+require_once __DIR__ . '/services/SireneService.php';
 require_once __DIR__ . '/services/OverpassService.php';
 require_once __DIR__ . '/services/EnrichmentService.php';
 require_once __DIR__ . '/services/AiService.php';
