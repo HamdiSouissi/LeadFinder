@@ -11,5 +11,11 @@ return [
         'overpass_servers' => ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://overpass.private.coffee/api/interpreter'],
         'request_delay' => 1.2, 'timeout' => 45, 'max_grid_cells' => 16,
     ],
-    'ai' => ['enabled' => false, 'endpoint' => '', 'api_key' => '', 'model' => ''],
+    'ai' => [
+        // Exemple Groq compatible OpenAI. Laissez désactivé tant que vous n'avez pas fourni votre clé privée.
+        'enabled' => false,
+        'endpoint' => 'https://api.groq.com/openai/v1/chat/completions',
+        'api_key' => '', // À renseigner uniquement dans config.php / Paramètres, jamais dans Git.
+        'model' => 'llama-3.3-70b-versatile',
+    ],
 ];

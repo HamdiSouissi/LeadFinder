@@ -50,7 +50,7 @@ Application web de prospection locale en PHP natif 8.x et MySQL/PDO. Elle interr
 
 1. Dans IONOS, créez une base MySQL et un utilisateur avec droits sur cette base. Notez l’hôte SQL (il n’est pas toujours `localhost`), le nom, l’utilisateur et le mot de passe.
 2. Importez `database/schema.sql` via phpMyAdmin. Pour charger les données d’exemple et le compte de démonstration, importez ensuite `database/seed.sql`.
-3. Copiez `config/config.example.php` vers `config/config.php` et remplacez les informations MySQL et le contact dans `sources.user_agent` par une adresse de contact valide. `config/config.php` est ignoré par Git.
+3. Copiez `config/config.example.php` vers `config/config.php` et remplacez les informations MySQL et le contact dans `sources.user_agent` par une adresse de contact réelle (pas `admin@example.com`). Nominatim refuse ou limite les requêtes dont le User-Agent n’identifie pas réellement l’application. `config/config.php` est ignoré par Git.
 4. Dans IONOS, choisissez PHP 8.1 ou plus récent. Activez les extensions `pdo_mysql`, `curl` et `json` (et vérifiez qu’elles sont disponibles sur l’offre).
 5. Donnez au processus PHP les droits d’écriture sur `storage/cache` et `storage/logs` (permissions usuelles 755/775 selon l’hébergement).
 6. Réglez le répertoire cible du domaine sur `public/` si IONOS le permet. Sinon, placez le dépôt hors de la racine publique et faites pointer la racine web vers son dossier `public`. Le `.htaccess` à la racine réécrit les requêtes vers `public/` et interdit l’accès HTTP aux répertoires privés.
@@ -67,7 +67,7 @@ La configuration initiale est un exemple : ne la publiez pas avec des identifian
 - Filtres de catégories OSM modifiables dans `config/categories.php`; catégories supplémentaires possibles dans Paramètres (objet JSON `clé: {label, tags}`).
 - Prospects dédupliqués par type/id OSM. Une mise à jour issue d’une recherche ne remplace pas les notes ni le statut de prospection existants.
 - Tableau filtrable, export CSV UTF-8 avec BOM utilisable dans Excel, fiche avec actions téléphoniques/WhatsApp/email/itinéraire, journal d’interactions, vérification web facultative, Kanban et carte OSM/Leaflet.
-- Normalisation locale de numéros tunisiens, français, marocains et algériens. Génération de message et suggestion de normalisation par IA désactivées par défaut et compatibles avec endpoint Chat Completions configuré par l’utilisateur. L’interface propose aussi une présentation arabe avec direction RTL.
+- Normalisation locale de numéros tunisiens, français, marocains, algériens et italiens. Génération de message et suggestion de normalisation par IA désactivées par défaut et compatibles avec endpoint Chat Completions configuré par l’utilisateur. L’interface propose aussi une présentation arabe avec direction RTL.
 
 ## Paramètres et limites d’usage
 
@@ -75,7 +75,7 @@ Le User-Agent doit être identifiable et fournir un contact. Respectez les polit
 
 L’absence d’un tag `website`, `contact:website` ou `url` dans OSM **ne prouve pas** que l’établissement n’a pas de site : la donnée peut être incomplète. Le statut de confiance est indicatif. La vérification DuckDuckGo est une recherche web non garantie, et non une preuve exhaustive. Cette application ne scrape ni Google Maps ni les Pages Jaunes. Les téléphones, emails et réseaux sociaux sont repris des balises OSM lorsqu’elles existent; aucune extraction de données personnelles depuis les sites tiers n’est effectuée.
 
-L’IA et la recherche DuckDuckGo transmettent le nom du prospect/la requête au service externe choisi. Activez ces fonctions uniquement après avoir évalué les conditions et règles de confidentialité du fournisseur. Les tuiles Leaflet et la police web sont chargées via CDN; pour une installation hors-ligne ou avec politique CSP stricte, hébergez ces ressources conformément à leurs licences.
+Le modèle IA d’exemple est préconfiguré avec un endpoint Groq compatible OpenAI, mais reste désactivé et sans clé par défaut. Pour l’activer, ajoutez votre clé API directement dans `config/config.php` ou dans Paramètres sur votre hébergement; ne la publiez pas dans Git et ne la partagez pas dans le chat. L’IA et la recherche DuckDuckGo transmettent le nom du prospect/la requête au service externe choisi. Activez ces fonctions uniquement après avoir évalué les conditions et règles de confidentialité du fournisseur. Les tuiles Leaflet et la police web sont chargées via CDN; pour une installation hors-ligne ou avec politique CSP stricte, hébergez ces ressources conformément à leurs licences.
 
 ## Développement local
 
