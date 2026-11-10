@@ -67,3 +67,11 @@ $resolved = $invoke('resolveUrl', ['../privacy/contatti.html?x=1#y', 'https://ww
 $expect($resolved === 'https://www.pizzeria-test.it/privacy/contatti.html?x=1', 'resolves relative paths with dot segments');
 
 echo "New coverage tests passed.\n";
+
+$googleJson = '{"items":[{"link":"https://www.pizzeria-test.it/","title":"Pizzeria Test — Milan"},{"link":"https://www.paginegialle.it/scheda/123","title":"Annuaire"},{"link":"pas-une-url","title":"Broken"},{"link":"https://www.pizzeria-test.it/","title":"Duplicate"}]}';
+$google = $invoke('parseGoogleResults', [$googleJson]);
+$expect(count($google) === 1 && $google[0]['url'] === 'https://www.pizzeria-test.it/', 'parses Google CSE items and filters blocked, invalid and duplicate links');
+$expect($invoke('googleSearchResults', ['pizzeria test milano', 'IT', []]) === null, 'Google CSE is skipped silently when not configured');
+$expect($invoke('parseGoogleResults', ['not-json']) === [], 'Google CSE handles malformed payloads');
+
+echo "Google CSE tests passed.\n";

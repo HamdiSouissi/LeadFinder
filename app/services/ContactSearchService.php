@@ -10,11 +10,11 @@ final class ContactSearchService {
     public function search(array $prospect, string $country, array $config): array {
         $name=trim((string)($prospect['nom']??''));$address=trim((string)($prospect['adresse']??''));$city=trim((string)($prospect['ville']??''));$postcode=trim((string)($prospect['code_postal']??''));
         if($name===''||($city===''&&$address===''))throw new RuntimeException('Le prospect doit avoir au minimum un nom et une ville ou une adresse.');
-        $country=in_array($country,['IT','FR'],true)?$country:'IT';$key='contact_v3_'.sha1(strtolower($name.'|'.$address.'|'.$postcode.'|'.$city.'|'.$country));$cached=$this->cacheGet($key);if($cached)return $cached;
+        $country=in_array($country,['IT','FR'],true)?$country:'IT';$key='contact_v4_'.sha1(strtolower($name.'|'.$address.'|'.$postcode.'|'.$city.'|'.$country));$cached=$this->cacheGet($key);if($cached)return $cached;
         $locale=['IT'=>'it-it','FR'=>'fr-fr'][$country];$terms=$country==='IT'?'telefono email contatti sito ufficiale':'téléphone email contact site officiel';
-        $query=trim('"'.$name.'" '.$address.' '.$postcode.' '.$city.' '.$terms);$html=$this->httpGet(self::SEARCH_URL.'?'.http_build_query(['q'=>$query,'kl'=>$locale]),$config,true);
-        if($html===null)throw new RuntimeException('La recherche web est momentanément indisponible. Réessayez plus tard.');
-        $results=$this->parseSearchResults($html);$contacts=['phone'=>null,'email'=>null,'website'=>null,'facebook'=>null,'instagram'=>null,'linkedin'=>null,'address'=>null,'city'=>null,'postcode'=>null];$contactSources=[];$businessInfo=['description'=>null,'opening_hours'=>null];$businessInfoSources=[];$sources=[];$visitedHosts=[];$pagesCrawled=0;$pagesRead=0;
+        $query=trim('"'.$name.'" '.$address.' '.$postcode.' '.$city.' '.$terms);
+        $engine='google';$results=$this->googleSearchResults($query,$country,$config);
+        if(!$results){$googleConfigured=trim((string)($config['google_cse']['api_key']??''))!==''&&trim((string)($config['google_cse']['cx']??''))!=='';if($googleConfigured&&function_exists('log_error'))log_error('Google Custom Search indisponible ou vide; repli sur DuckDuckGo.');$html=$this->httpGet(self::SEARCH_URL.'?'.http_build_query(['q'=>$query,'kl'=>$locale]),$config,true);if($html===null)throw new RuntimeException('La recherche web est momentanément indisponible. Réessayez plus tard.');$results=$this->parseSearchResults($html);$engine='duckduckgo';}$contacts=['phone'=>null,'email'=>null,'website'=>null,'facebook'=>null,'instagram'=>null,'linkedin'=>null,'address'=>null,'city'=>null,'postcode'=>null];$contactSources=[];$businessInfo=['description'=>null,'opening_hours'=>null];$businessInfoSources=[];$sources=[];$visitedHosts=[];$pagesCrawled=0;$pagesRead=0;
         foreach($results as $row){
             $host=strtolower((string)(parse_url($row['url'],PHP_URL_HOST)??''));if(!$host||$this->isBlocked($host)||isset($visitedHosts[$host])||count($visitedHosts)>=3)continue;$visitedHosts[$host]=true;
             $queue=[$row['url']];$seenUrls=[];$pagesForHost=0;
@@ -33,7 +33,7 @@ final class ContactSearchService {
                 if($pagesForHost<2&&$pagesCrawled<6)$queue=array_merge($queue,$this->relevantPageUrls($page,$url,$host,2-count($seenUrls)));
             }
         }
-        $answer=['contacts'=>$contacts,'contact_sources'=>$contactSources,'business_info'=>$businessInfo,'business_info_sources'=>$businessInfoSources,'sources'=>$sources,'search_results'=>array_slice($results,0,8),'pages_crawled'=>$pagesCrawled,'pages_read'=>$pagesRead,'sites_checked'=>count($visitedHosts),'cached'=>false,'notice'=>'Les pages publiques ont été parcourues pour relever des coordonnées et des informations de présentation. Vérifiez leur lien avec le prospect avant tout enregistrement.'];$this->cacheSet($key,$answer);return $answer;
+        $answer=['contacts'=>$contacts,'contact_sources'=>$contactSources,'business_info'=>$businessInfo,'business_info_sources'=>$businessInfoSources,'sources'=>$sources,'search_results'=>array_slice($results,0,8),'pages_crawled'=>$pagesCrawled,'pages_read'=>$pagesRead,'sites_checked'=>count($visitedHosts),'cached'=>false,'engine'=>$engine,'notice'=>'Pages publiques parcourues via '.($engine==='google'?'Google Custom Search':'DuckDuckGo').' pour relever des coordonnées et des informations de présentation. Vérifiez leur lien avec le prospect avant tout enregistrement.'];$this->cacheSet($key,$answer);return $answer;
     }
 
     public function discoverBusinessResults(string $city,string $category,string $country,array $config): array {
@@ -55,6 +55,21 @@ final class ContactSearchService {
 
     private function parseSearchResults(string $html): array {
         $rows=[];if(preg_match_all('/class="result__a"[^>]*href="([^"]+)"[^>]*>(.*?)<\/a>/is',$html,$matches,PREG_SET_ORDER))foreach(array_slice($matches,0,12) as $m){$url=html_entity_decode($m[1],ENT_QUOTES|ENT_HTML5,'UTF-8');if(str_contains($url,'uddg=')){parse_str((string)parse_url($url,PHP_URL_QUERY),$args);$url=(string)($args['uddg']??$url);}$url=$this->validHttpUrl($url);$host=$url?strtolower((string)parse_url($url,PHP_URL_HOST)):'';if($url&&$host&&!$this->isBlocked($host))$rows[]=['url'=>$url,'title'=>trim(html_entity_decode(strip_tags($m[2]),ENT_QUOTES|ENT_HTML5,'UTF-8'))];}
+        $unique=[];foreach($rows as $row)$unique[$row['url']]=$row;return array_values($unique);
+    }
+
+    /** Google Programmable Search (Custom Search JSON API); null when unconfigured or unavailable. */
+    private function googleSearchResults(string $query,string $country,array $config): ?array {
+        $key=trim((string)($config['google_cse']['api_key']??''));$cx=trim((string)($config['google_cse']['cx']??''));if($key===''||$cx==='')return null;
+        $lang=$country==='IT'?'it':'fr';
+        $url='https://www.googleapis.com/customsearch/v1?'.http_build_query(['key'=>$key,'cx'=>$cx,'q'=>$query,'num'=>10,'hl'=>$lang,'gl'=>$lang,'safe'=>'active']);
+        $body=$this->httpGet($url,$config,true);if($body===null)return null;
+        return $this->parseGoogleResults($body);
+    }
+
+    private function parseGoogleResults(string $json): array {
+        $decoded=json_decode($json,true);if(!is_array($decoded)||!isset($decoded['items'])||!is_array($decoded['items']))return [];
+        $rows=[];foreach(array_slice($decoded['items'],0,12) as $item){if(!is_array($item))continue;$url=isset($item['link'])&&is_string($item['link'])?$this->validHttpUrl($item['link']):null;$host=$url?strtolower((string)parse_url($url,PHP_URL_HOST)):'';if(!$url||!$host||$this->isBlocked($host))continue;$title=isset($item['title'])&&is_string($item['title'])?trim(html_entity_decode(strip_tags($item['title']),ENT_QUOTES|ENT_HTML5,'UTF-8')):'';if(function_exists('iconv')){$clean=iconv('UTF-8','UTF-8//IGNORE',$title);if($clean!==false)$title=$clean;}$rows[]=['url'=>$url,'title'=>$title];}
         $unique=[];foreach($rows as $row)$unique[$row['url']]=$row;return array_values($unique);
     }
 

@@ -11,6 +11,13 @@ return [
         'overpass_servers' => ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://overpass.private.coffee/api/interpreter', 'https://overpass.osm.ch/api/interpreter', 'https://overpass.nchc.org.tw/api/interpreter'],
         'request_delay' => 1.2, 'timeout' => 10, 'max_grid_cells' => 16,
     ],
+    'google_cse' => [
+        // Facultatif : Google Programmable Search (Custom Search JSON API) pour « Chercher sur Internet ».
+        // Console Google Cloud → activez « Custom Search JSON API » → créez une clé API.
+        // programmablesearchengine.google.com → moteur « Rechercher sur tout le Web » → copiez le paramètre cx.
+        // Quota gratuit : 100 requêtes/jour. Laissez vide pour utiliser DuckDuckGo.
+        'api_key' => '', 'cx' => '',
+    ],
     'ai' => [
         // Exemple Groq compatible OpenAI. Laissez désactivé tant que vous n'avez pas fourni votre clé privée.
         'enabled' => false,

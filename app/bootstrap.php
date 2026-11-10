@@ -42,4 +42,6 @@ try {
     if (!empty($saved['request_delay'])) $config['sources']['request_delay'] = max(1.0, (float)$saved['request_delay']);
     if (isset($saved['ai_enabled'])) $config['ai']['enabled'] = $saved['ai_enabled'] === '1';
     foreach (['ai_endpoint'=>'endpoint','ai_key'=>'api_key','ai_model'=>'model'] as $key=>$target) if (isset($saved[$key])) $config['ai'][$target] = $saved[$key];
+    if (!empty($saved['google_cse_key'])) $config['google_cse']['api_key'] = $saved['google_cse_key'];
+    if (!empty($saved['google_cse_cx'])) $config['google_cse']['cx'] = $saved['google_cse_cx'];
 } catch (Throwable $ignored) { /* First run: settings table may not exist yet. */ }
